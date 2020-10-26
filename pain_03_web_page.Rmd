@@ -34,7 +34,7 @@ embed_json_file("web_data/gene_doc.json", "gene_doc")
 ```{r, echo=FALSE}
 # Add Scripts
 tags$script(src="https://d3js.org/d3.v6.min.js")
-tags$script(src="http://dimplejs.org/dist/dimple.v2.3.0.min.js")
+tags$script(src="https://cdnjs.cloudflare.com/ajax/libs/dimple/2.3.0/dimple.latest.min.js")
 tags$script(src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js")
 tags$link(rel="stylesheet", type="text/css", href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css")
 embed_js("js/create_plot.js")
