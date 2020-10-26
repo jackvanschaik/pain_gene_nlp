@@ -1,0 +1,124 @@
+---
+title: "Pain 01 Read Data"
+author: "Jack VanSchaik"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, results="hide", message=FALSE}
+library(fst)
+library(jsonlite)
+library(readxl)
+library(skimr)
+library(tidyverse)
+```
+
+## Read Raw Data Files
+
+These files are from Rajeni on 10/23/2020. Her comments were:
+
+Please find the final json file containing the articles extracted for all the genes from PUBMED.
+1. Each search returns a maximum of 500 results per gene.
+2. Extracted a total of 34K articles for 175 unique gene names.
+3. Only 2 genes i.e, ZNF837 and ZNF497 had no results.
+4. For a gene named 'HR' the results were not accurate, and hence I used the full approved name for the gene.
+5. I did not remove duplicates to retain the possibility of having one or more gene name in a given article. (edited)
+
+
+```{r}
+final <- read_json("data/final.json")
+```
+
+## Read and Prepare PUBMED Data
+
+#### Convert to Data Frame Format
+
+```{r}
+replace_nulls <- function(L, na=NA_character_, title="vector") {
+    L_rep <- lapply(L, function(x) {
+        if (is.null(x)) {
+            return(na)
+        }
+        else {
+            return(x)
+        }
+    })
+    reps <- length(unlist(L_rep)) - length(unlist(L))
+    cat(sprintf("Replaced %s NULLs in %s with NAs", reps, title), fill=TRUE)
+    L_rep
+}
+
+pm_df <- data.frame(
+    pubmed_id = unlist(replace_nulls(final$pubmed_id, title="PUBMED ID")),
+    title = unlist(replace_nulls(final$title, title="Title")),
+    abstract = unlist(replace_nulls(final$abstract, title="Abstract"))
+)
+
+```
+
+#### Clean Data
+
+Cleaning step
+
+1. Remove NA titles and Abstracts (these won't do us much good)
+2. Remove duplicates (Rajeni left these in)
+
+
+```{r}
+pm_df %>%
+    filter(!is.na(title)) %>%
+    filter(!is.na(abstract)) %>%
+    distinct ->
+    pm_df_2
+```
+
+```{r}
+nrow(pm_df)
+nrow(pm_df_2)
+```
+#### Check Data
+
+Number of character in title
+
+```{r}
+pm_df_2 %>%
+    transmute(nchar_title = nchar(title)) %>%
+    ggplot(aes(x=nchar_title)) + geom_histogram(binwidth = 1)
+```
+
+Number of characters in abstract
+
+```{r}
+pm_df_2 %>%
+    transmute(nchar_abstract = nchar(abstract)) %>%
+    ggplot(aes(x=nchar_abstract)) + geom_histogram(binwidth = 10)
+```
+```{r}
+pm_df_2 %>%
+    mutate(nchar_abstract = nchar(abstract)) %>%
+    arrange(nchar_abstract) %>%
+    head
+```
+
+__NOTE:__ It looks like certain special characters (UNICODE?) are getting cut off in. For example [PMID 29627444](https://pubmed.ncbi.nlm.nih.gov/29627444/) get cut off right at "Acid-sensing ion channels (ASICs) are neuronal Na". These are cutoff in the source file as well so it might be the python API for pubmed or how the file is being saved. Once this is fixed, we shouldn't need to clean it, so I'll leave these be. 
+
+__NOTE:__ Some articles use capitals for mouse genes so capitalization doesn't really matter. For example [PMID 23109675](https://pubmed.ncbi.nlm.nih.gov/23109675/)
+
+## Read and Prepare Gene Names
+
+#### Convert to Data Frame Format
+
+```{r}
+gene_names <- read_excel("data/Gene names.xlsx", col_names=c("gene_name", "full_name", "count"))
+```
+
+## Export Files
+
+```{r}
+write_fst(gene_names, "scratch/gene_names.fst")
+write_fst(pm_df_2, "scratch/pm_df_2.fst")
+```
+

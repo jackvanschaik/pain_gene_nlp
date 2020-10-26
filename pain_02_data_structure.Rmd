@@ -1,0 +1,98 @@
+---
+title: "Pain 01 Data Structure"
+author: "Jack VanSchaik"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, results="hide", message=FALSE}
+library(fst)
+library(jsonlite)
+library(quanteda)
+library(tidyverse)
+```
+
+## Read In Data
+
+```{r}
+gene_names <- read_fst("scratch/gene_names.fst")
+pm_df_2 <- read_fst("scratch/pm_df_2.fst")
+```
+
+## Planning
+
+I think we'll probably want three json objects:
+
+* Gene Names: List of gene names we want to query
+* 
+
+Something we'll need for sure:
+
+* pre-computed term frequency for each gene
+* for proper IDF, we will need to tokenize
+
+## Text Processing
+
+#### Get Vector of Gene Names
+
+```{r}
+genes <- gene_names$gene_name
+```
+
+#### Create Corpus and Tokenize
+
+```{r}
+pm_df_2 %>%
+    corpus(docid_field="pubmed_id", text_field="abstract") %>%
+    tokens(
+        what="word",
+        remove_punct=TRUE,
+        remove_symbols=TRUE
+    ) %>%
+    tokens_tolower ->
+    pm_tok
+```
+
+#### Get Gene Counts
+
+```{r}
+pm_tok %>%
+    dfm %>%
+    dfm_keep(pattern = genes, valuetype = "fixed") %>%
+    convert(to = "data.frame") ->
+    pm_tf
+```
+
+```{r}
+pm_tf %>%
+    pivot_longer(-doc_id) %>%
+    filter(value != 0) %>%
+    select(
+        gene = name,
+        pubmed_id = doc_id,
+        tf = value
+    ) %>%
+    arrange(gene, desc(tf)) ->
+    pm_gene_docs
+```
+
+## Create json objects
+
+#### TF json object
+
+```{r}
+gene_doc_sp <- split(pm_gene_docs, as.factor(pm_gene_docs$gene))
+gene_doc_L <- lapply(gene_doc_sp, function(j) as.list(select(j, pubmed_id, tf)))
+names(gene_doc_L) <- names(gene_doc_sp)
+
+gene_doc_json <- jsonlite::toJSON(gene_doc_L)
+```
+## Export Data
+
+```{r}
+write_file(gene_doc_json, "web_data/gene_doc.json")
+```
+

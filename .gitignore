@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data/*
+scratch/*
+web_data/*
+pain_01_read_data.html

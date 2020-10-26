@@ -1,0 +1,58 @@
+---
+title: "Pain NLP"
+output: html_document
+---
+
+```{r, results="hide", message=FALSE, echo=FALSE, warning=FALSE}
+library(htmltools)
+library(fst)
+```
+
+```{r, echo=FALSE}
+embed_json_file <- function(path, var_name) {
+    txt <- readr::read_file(path)
+    htmltools::tags$script(sprintf("%s = %s;", var_name, txt))
+}
+
+embed_js <- function(path) {
+    txt <- readr::read_file(path)
+    htmltools::tags$script(htmltools::HTML(txt))
+}
+```
+
+```{r, echo=FALSE}
+# Load table of gene names
+gene_names <- sort(read_fst("scratch/gene_names.fst")$gene_name)
+```
+
+
+```{r, echo=FALSE}
+# Embed Data
+embed_json_file("web_data/gene_doc.json", "gene_doc")
+```
+
+```{r, echo=FALSE}
+# Add Scripts
+tags$script(src="https://d3js.org/d3.v6.min.js")
+tags$script(src="http://dimplejs.org/dist/dimple.v2.3.0.min.js")
+tags$script(src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js")
+tags$link(rel="stylesheet", type="text/css", href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css")
+embed_js("js/create_plot.js")
+```
+
+## Contents {.tabset}
+
+### TF-Search
+
+```{r, echo=FALSE}
+opt_genes <- lapply(gene_names, function(g) tags$option(g, value=tolower(g)))
+
+tags$select(id="gene_select", onchange="plot_gene()", tagList(opt_genes))
+tags$h4(id="tf_title")
+tags$div(id="tf_out")
+tags$table(id="tf_table")
+```
+
+### Document co-mentions
+
+Add this later
