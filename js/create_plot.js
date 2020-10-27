@@ -23,7 +23,7 @@ plot_gene = function() {
     // add table
     tf_table = $('#tf_table').DataTable({
         data: gene_data,
-        columns: [{data: 'pubmed_id'}, {data: 'tf'}],
+        columns: [{data: 'pubmed_id'}, {data:'link'}, {data: 'tf'}],
         destroy: true
     });
 }
@@ -32,6 +32,9 @@ plot_gene = function() {
 gene_to_data = function(gene_name) {
     var X = gene_doc[gene_name];
     var Y = cols_to_table([X.pubmed_id, X.tf], ["pubmed_id", "tf"]);
+    for (var i in Y) {
+        Y[i].link = pubmed_link(Y[i].pubmed_id);
+    }
     return(Y);
 }
 ;

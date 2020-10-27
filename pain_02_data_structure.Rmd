@@ -10,7 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, results="hide", message=FALSE}
 library(fst)
+library(ggnetwork)
 library(jsonlite)
+library(network)
 library(quanteda)
 library(tidyverse)
 ```
@@ -79,6 +81,28 @@ pm_tf %>%
     pm_gene_docs
 ```
 
+## Prep Data For Network Plot
+
+```{r}
+pm_gene_docs %>%
+    inner_join(pm_gene_docs, by="pubmed_id") %>%
+    arrange(pubmed_id) %>%
+    filter(gene.x != gene.y) %>%
+    select(gene.x, gene.y) %>%
+    distinct %>%
+    network ->
+    pm_net
+
+pm_net %>%
+    ggnetwork(cell.jitter=0.75) %>%
+    ggplot(aes(x = x, y = y, xend = xend, yend = yend, label=vertex.names)) +
+    geom_edges(color = "grey50") +
+    geom_nodetext() + 
+    theme_blank()
+
+```
+
+
 ## Create json objects
 
 #### TF json object
@@ -94,5 +118,6 @@ gene_doc_json <- jsonlite::toJSON(gene_doc_L)
 
 ```{r}
 write_file(gene_doc_json, "web_data/gene_doc.json")
+write_rds(pm_net, "scratch/pm_net.rds")
 ```
 

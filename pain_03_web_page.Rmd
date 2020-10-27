@@ -6,6 +6,9 @@ output: html_document
 ```{r, results="hide", message=FALSE, echo=FALSE, warning=FALSE}
 library(htmltools)
 library(fst)
+library(ggnetwork)
+library(network)
+library(tidyverse)
 ```
 
 ```{r, echo=FALSE}
@@ -21,7 +24,8 @@ embed_js <- function(path) {
 ```
 
 ```{r, echo=FALSE}
-# Load table of gene names
+# Load scratch data
+pm_net <- read_rds("scratch/pm_net.rds")
 gene_names <- sort(read_fst("scratch/gene_names.fst")$gene_name)
 ```
 
@@ -55,4 +59,12 @@ tags$table(id="tf_table")
 
 ### Document co-mentions
 
-Add this later
+```{r, echo=FALSE}
+pm_net %>%
+    ggnetwork(cell.jitter=0.75) %>%
+    ggplot(aes(x = x, y = y, xend = xend, yend = yend, label=vertex.names)) +
+    geom_edges(color = "grey50") +
+    geom_nodetext() + 
+    theme_blank()
+```
+
